@@ -2,21 +2,15 @@ import type { Pregunta, Opcion } from '@/stores/useTestStore'
 
 // Inserta saltos antes de "n." y de "a) b) c) d)" aunque vayan en la misma línea
 function normalizeForBlocks(raw: string): string {
-  let t = raw.replace(/\r/g, '')
-  // salto antes de 1. / 2) ...
-  t = t.replace(/(\s)(\d{1,3}[\.\)])\s/g, '\n$2 ')
-  // salto antes de a) b) c) d) (may/min)
-  t = t.replace(/(\s)([A-Da-d])[\)\.\-]\s/g, '\n$2) ')
-  // limpia espacios y saltos múltiples
-  t = t.replace(/[ \t]+/g, ' ').replace(/\n{2,}/g, '\n')
-  return t
+  return raw.replace(/\r/g, '').replace(/[ \t]+/g, ' ').replace(/\n{2,}/g, '\n')
 }
 
 export function parseExamen(text: string): Pregunta[] {
   const clean = normalizeForBlocks(text)
 
-  // divide por "n." o "n)"
-  const bloques = clean.split(/\n(?=\s*\d{1,3}[\.\)]\s+)/g)
+  // Solo se consideran preguntas los numerales al comienzo de una línea;
+  // así no convertimos referencias como "artículos 52." en preguntas nuevas.
+  const bloques = clean.split(/(?=\n\s*\d{1,3}[\.\)]\s+)/g)
   const preguntas: Pregunta[] = []
 
   for (const bloque of bloques) {
@@ -26,22 +20,24 @@ export function parseExamen(text: string): Pregunta[] {
     const resto = mId[2] ?? ''
 
     // enunciado: hasta la primera opción (a)/A))
-    const firstOpt = resto.search(/(^|\n)\s*[A-Da-d][\)\.\-]\s+/)
+    const firstOpt = resto.search(/(?:^|\n|\s)([A-Da-d])[\)\.\-]\s+/)
     const enunciado = (firstOpt >= 0 ? resto.slice(0, firstOpt) : resto).trim()
 
     // opciones: tolerante con may/min y separaciones en la misma línea
-    const opRegex = /(?:^|\n)\s*([A-Da-d])[\)\.\-]\s+([\s\S]*?)(?=(?:\n\s*[A-Da-d][\)\.\-]\s+)|\n*$)/g
+    const opRegex = /(?:^|\n|\s)([A-Da-d])[\)\.\-]\s+([\s\S]*?)(?=(?:\n?\s*[A-Da-d][\)\.\-]\s+)|$)/g
     const opciones: Partial<Record<Opcion, string>> = {}
     let mm: RegExpExecArray | null
     while ((mm = opRegex.exec(resto)) !== null) {
       const key = mm[1].toUpperCase() as Opcion
       const val = (mm[2] ?? '').trim()
-      opciones[key] = val
+      if (!opciones[key]) opciones[key] = val.replace(/\s+/g, ' ').trim()
     }
-
-    if (Object.keys(opciones).length >= 2) {
-      preguntas.push({ id, enunciado, opciones: opciones as Record<Opcion, string> })
-    }
+    const faltantes = (['A', 'B', 'C', 'D'] as Opcion[]).filter(k => !opciones[k])
+    preguntas.push({
+      id, enunciado, opciones: opciones as Record<Opcion, string>,
+      estado: faltantes.length ? 'pendiente' : 'valida',
+      advertencias: faltantes.length ? [`Faltan opciones: ${faltantes.join(', ')}`] : undefined,
+    })
   }
   return preguntas
 }
