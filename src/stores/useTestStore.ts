@@ -6,6 +6,8 @@ export type Pregunta = {
   enunciado: string
   opciones: Record<Opcion, string>
   correcta?: Opcion
+  estado?: 'valida' | 'pendiente' | 'anulada' | 'reserva'
+  advertencias?: string[]
 }
 export type Resultado = {
   aciertos: number

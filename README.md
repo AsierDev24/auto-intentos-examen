@@ -1,9 +1,17 @@
 # AutoExamen
 
+Aplicación de escritorio para Windows 10/11, basada en Vue 3 y Tauri 2.
+
 Aplicación web para practicar exámenes tipo test a partir de dos archivos PDF:
 el PDF con las preguntas y el PDF con la plantilla de respuestas.
 
 La aplicación extrae el texto con PDF.js y utiliza OCR con Tesseract.js cuando el PDF está escaneado. Después detecta las preguntas, fusiona sus respuestas correctas y permite realizar el examen y calcular la nota.
+
+El worker de PDF.js, el worker de Tesseract y el core WASM se empaquetan
+localmente. Los modelos comprimidos `spa.traineddata.gz` y
+`eng.traineddata.gz` deben estar disponibles en `public/tesseract-data/` para
+cerrar la distribución OCR sin conexión; este checkout todavía no los incluye
+y por eso esa validación queda pendiente.
 
 ## Funciones
 
@@ -67,6 +75,28 @@ npm run build
 npm run preview
 ```
 
+## Generar el instalador de Windows
+
+La compilación del instalador requiere Node.js, Rust (stable con MSVC), las
+herramientas de compilación de Visual Studio y WebView2 en el equipo de
+compilación. Ejecuta:
+
+```powershell
+npm install
+npm run tauri:build
+```
+
+El instalador NSIS se genera en `src-tauri/target/release/bundle/nsis/`.
+La configuración usa `embedBootstrapper` para que el instalador pueda
+descargar WebView2 si el equipo no lo tiene. Para una instalación totalmente
+aislada hay que distribuir previamente el instalador Evergreen Offline de
+WebView2 de Microsoft; la aplicación en sí no realiza peticiones de red para
+leer PDFs ni para OCR.
+
+La compilación Tauri no se puede validar en un equipo sin `rustc` y `cargo`.
+En ese caso, la validación pendiente es ejecutar `npm run tauri:build` en
+Windows con el toolchain instalado y probar el `.exe` resultante sin red.
+
 ## Formato esperado
 
 El parser funciona mejor cuando las preguntas siguen un formato similar a:
@@ -77,6 +107,12 @@ A) Primera opción
 B) Segunda opción
 C) Tercera opción
 D) Cuarta opción
+```
+
+## Pruebas
+
+```powershell
+npm test
 ```
 
 Y la plantilla de respuestas contiene entradas como:
