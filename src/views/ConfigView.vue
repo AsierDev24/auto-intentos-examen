@@ -9,6 +9,12 @@
 
   <section class="settings-grid">
     <div class="card settings-card">
+      <div class="section-icon">100</div><h2>Preguntas que cuentan</h2>
+      <p class="muted">Las anuladas se sustituyen por reservas hasta alcanzar este número.</p>
+      <label class="field-label" for="base-questions">Base del examen</label>
+      <input id="base-questions" v-model.number="store.config.preguntasBase" class="select-control" type="number" min="1" max="999" />
+    </div>
+    <div class="card settings-card">
       <div class="section-icon">☾</div>
       <h2>Apariencia</h2>
       <p class="muted">Elige el tema más cómodo para estudiar.</p>
@@ -16,6 +22,12 @@
         <input type="checkbox" v-model="store.config.modoOscuro" />
         <span>Usar modo oscuro</span>
       </label>
+    </div>
+    <div class="card settings-card">
+      <div class="section-icon">★</div><h2>Reglas de puntuación</h2>
+      <p class="muted">Configura cómo se calcula la nota de tus convocatorias.</p>
+      <label class="field-label">Puntos por acierto</label><input v-model.number="store.config.puntosAcierto" class="select-control" type="number" min="0" step="0.25" />
+      <label class="field-label">Puntos por blanco</label><input v-model.number="store.config.puntosBlanco" class="select-control" type="number" step="0.25" />
     </div>
     <div class="card settings-card">
       <div class="section-icon">▤</div>

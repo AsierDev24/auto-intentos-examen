@@ -20,4 +20,15 @@ describe('parseExamen', () => {
     expect(result[0].estado).toBe('pendiente')
     expect(result[0].advertencias).toEqual(['Faltan opciones: C, D'])
   })
+
+  it('reconstruye separadores que PDF.js entrega como tokens separados', () => {
+    const result = parseExamen(
+      '1 . ¿Cuál es la respuesta? a ) Primera opción. b ) Segunda opción. c ) Tercera opción. d ) Cuarta opción. 2 . Según la norma, ¿qué procede? a ) Una. b ) Dos. c ) Tres. d ) Cuatro.'
+    )
+    expect(result).toHaveLength(2)
+    expect(result[0].opciones).toEqual({
+      A: 'Primera opción.', B: 'Segunda opción.', C: 'Tercera opción.', D: 'Cuarta opción.',
+    })
+    expect(result[1].enunciado).toContain('Según la norma')
+  })
 })

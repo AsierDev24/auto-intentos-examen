@@ -1,5 +1,8 @@
 <template>
-  <h1>Examen</h1>
+  <section class="page-heading compact-heading">
+    <div><span class="eyebrow">Sesión de estudio</span><h1>{{ store.examenActualNombre }}</h1><p class="subtitle">Responde a tu ritmo. Tus avances quedan asociados a este intento.</p></div>
+    <RouterLink to="/biblioteca">← Biblioteca</RouterLink>
+  </section>
 
   <!-- Barra superior -->
   <div class="card" style="display:flex; align-items:center; justify-content:space-between; gap:16px;">
@@ -20,8 +23,9 @@
   <!-- Bloque de 5 preguntas -->
   <div v-if="store.pageQuestions.length" class="card">
     <div v-for="(p, idx) in store.pageQuestions" :key="p.id" class="pregunta">
+      <div class="question-line"><span class="question-number">{{ store.pageStart + idx + 1 }}</span><button class="favorite-button" type="button" :aria-label="esFavorita(p) ? 'Quitar favorita' : 'Marcar favorita'" @click="store.alternarFavorita(p)">{{ esFavorita(p) ? '★' : '☆' }}</button></div>
       <p style="margin:0 0 8px; font-weight:700;">
-        {{ store.pageStart + idx + 1 }}. {{ p.enunciado }}
+        {{ p.enunciado }}
       </p>
 
       <div class="opc">
@@ -64,10 +68,14 @@ function claseOpcion(qid: string, letra: Opcion, correcta?: Opcion) {
   if (letra === marcada && marcada !== correcta) return 'bad'    // tu error
   return ''
 }
+function esFavorita(p: ReturnType<typeof useTestStore>['banco'][number]) { return store.favoritas.includes(store.favId(p)) }
 </script>
 
 <style scoped>
 .ok  { background: rgba(34,197,94,.15); border: 1px solid rgba(34,197,94,.35); border-radius:8px; padding:4px 8px; }
 .bad { background: rgba(239,68,68,.15); border: 1px solid rgba(239,68,68,.35); border-radius:8px; padding:4px 8px; }
 .sol { background: rgba(59,130,246,.15); border: 1px solid rgba(59,130,246,.35); border-radius:8px; padding:4px 8px; }
+.question-line { display: flex; align-items: center; gap: 8px; color: var(--primary); font-weight: 800; }
+.favorite-button { padding: 2px 7px; color: var(--primary); background: transparent; box-shadow: none; font-size: 1.25rem; }
+.favorite-button:hover { background: var(--surface-soft); box-shadow: none; }
 </style>

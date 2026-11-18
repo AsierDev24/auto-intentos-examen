@@ -2,7 +2,18 @@ import type { Pregunta, Opcion } from '@/stores/useTestStore'
 
 // Inserta saltos antes de "n." y de "a) b) c) d)" aunque vayan en la misma línea
 function normalizeForBlocks(raw: string): string {
-  return raw.replace(/\r/g, '').replace(/[ \t]+/g, ' ').replace(/\n{2,}/g, '\n')
+  let t = raw.replace(/\r/g, '').replace(/[ \t]+/g, ' ').replace(/\n{2,}/g, '\n')
+
+  // PDF.js puede entregar el número y el signo de puntuación como tokens
+  // independientes: "1" + "." y "a" + ")". Reconstruimos ambos casos.
+  t = t.replace(/(\d{1,3})\s*([.)])\s+/g, '$1$2 ')
+  t = t.replace(/([A-Da-d])\s*([).\-])\s+/g, '$1$2 ')
+
+  // El texto extraído suele venir en una sola línea. Solo introducimos un
+  // bloque nuevo cuando el número parece iniciar una pregunta (¿/¡ o letra
+  // mayúscula), evitando referencias como "artículo 19. de diciembre".
+  t = t.replace(/\s+(\d{1,3}[.)])\s+(?=[¿¡A-ZÁÉÍÓÚÜÑ])(?![A-Da-d]\s*[).])/g, '\n$1 ')
+  return t
 }
 
 export function parseExamen(text: string): Pregunta[] {
