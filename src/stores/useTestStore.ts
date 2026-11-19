@@ -15,8 +15,9 @@ export type Resultado = {
   fallos: number
   blancos: number
   nota: number
+  total: number
 }
-export type HistorialResultado = Resultado & { fecha: string; total: number; examenId?: string | null; examenNombre?: string; falladas?: string[] }
+export type HistorialResultado = Resultado & { fecha: string; examenId?: string | null; examenNombre?: string; falladas?: string[] }
 export type ExamenGuardado = { id: string; nombre: string; origen?: string; fecha: string; preguntas: Pregunta[] }
 
 function leer<T>(clave: string, fallback: T): T {
@@ -31,6 +32,7 @@ export const useTestStore = defineStore('test', {
     revision: [] as Pregunta[],
     examenActualId: null as string | null,
     examenActualNombre: 'Examen sin guardar',
+    tipoSesion: 'normal' as 'normal' | 'ultra' | 'repaso',
     biblioteca: leer<ExamenGuardado[]>('autoexamen-biblioteca', []),
     favoritas: leer<string[]>('autoexamen-favoritas', []),
     respuestas: {} as Record<string, Opcion | undefined>,
@@ -51,7 +53,7 @@ export const useTestStore = defineStore('test', {
   }),
 
   getters: {
-    total: (s) => s.banco.length,
+    total(): number { return this.preguntasEvaluables.length },
     respondidas: (s) => Object.values(s.respuestas).filter(Boolean).length,
     totalPages(): number {
       if (!this.total) return 1
@@ -64,9 +66,14 @@ export const useTestStore = defineStore('test', {
       return Math.min(this.pageStart + this.config.pageSize, this.total)
     },
     pageQuestions(): Pregunta[] {
-      return this.banco.slice(this.pageStart, this.pageEnd)
+      return this.preguntasEvaluables.slice(this.pageStart, this.pageEnd)
     },
     preguntasEvaluables(): Pregunta[] {
+      // Un ultraexamen o un repaso debe incluir todas sus preguntas. El límite
+      // de 100 solo representa la plantilla de un examen oficial normal.
+      if (this.tipoSesion !== 'normal') {
+        return this.banco.filter(p => p.estado !== 'anulada')
+      }
       const normales = this.banco.filter(p => p.estado !== 'anulada' && p.estado !== 'reserva')
       const reservas = this.banco.filter(p => p.estado === 'reserva')
       const anuladas = this.banco.filter(p => p.estado === 'anulada').length
@@ -89,6 +96,7 @@ export const useTestStore = defineStore('test', {
       this.banco = preguntas
       this.examenActualId = null
       this.examenActualNombre = 'Examen importado'
+      this.tipoSesion = 'normal'
       this.startExam()
     },
     prepararRevision(preguntas: Pregunta[]) { this.revision = cloneQuestions(preguntas) },
@@ -107,7 +115,7 @@ export const useTestStore = defineStore('test', {
     },
     cargarExamen(id: string) {
       const examen = this.biblioteca.find(e => e.id === id); if (!examen) return
-      this.banco = cloneQuestions(examen.preguntas); this.examenActualId = id; this.examenActualNombre = examen.nombre; this.startExam()
+      this.banco = cloneQuestions(examen.preguntas); this.examenActualId = id; this.examenActualNombre = examen.nombre; this.tipoSesion = 'normal'; this.startExam()
     },
     borrarExamen(id: string) {
       this.biblioteca = this.biblioteca.filter(e => e.id !== id); localStorage.setItem('autoexamen-biblioteca', JSON.stringify(this.biblioteca)); void removeExam(id).catch(error => console.error('[AutoExamen] No se pudo borrar de SQLite', error))
@@ -115,15 +123,15 @@ export const useTestStore = defineStore('test', {
     },
     crearUltra(ids: string[]) {
       const seleccion = this.biblioteca.filter(e => ids.includes(e.id)); const preguntas = seleccion.flatMap(e => e.preguntas.map(p => ({ ...p, id: `${e.id}-${p.id}` })))
-      this.banco = preguntas; this.examenActualId = null; this.examenActualNombre = `Ultraexamen · ${seleccion.length} bancos`; this.startExam()
+      this.banco = preguntas; this.examenActualId = null; this.examenActualNombre = `Ultraexamen · ${seleccion.length} bancos`; this.tipoSesion = 'ultra'; this.startExam()
     },
     crearRepasoFavoritas() {
       const preguntas = this.biblioteca.flatMap(e => e.preguntas.filter(p => this.favoritas.includes(favoriteId(e.id, p))).map(p => ({ ...p, id: `${e.id}-${p.id}` })))
-      this.banco = preguntas; this.examenActualId = null; this.examenActualNombre = 'Repaso de favoritas'; this.startExam()
+      this.banco = preguntas; this.examenActualId = null; this.examenActualNombre = 'Repaso de favoritas'; this.tipoSesion = 'repaso'; this.startExam()
     },
     crearRepasoFalladas() {
       const preguntas = this.biblioteca.flatMap(e => e.preguntas.filter(p => this.falladas.includes(favoriteId(e.id, p))).map(p => ({ ...p, id: `${e.id}-${p.id}` })))
-      this.banco = preguntas; this.examenActualId = null; this.examenActualNombre = 'Repaso de falladas'; this.startExam()
+      this.banco = preguntas; this.examenActualId = null; this.examenActualNombre = 'Repaso de falladas'; this.tipoSesion = 'repaso'; this.startExam()
     },
     alternarFavorita(pregunta: Pregunta) {
       const id = this.favId(pregunta); this.favoritas = this.favoritas.includes(id) ? this.favoritas.filter(x => x !== id) : [...this.favoritas, id]; localStorage.setItem('autoexamen-favoritas', JSON.stringify(this.favoritas))
@@ -155,10 +163,10 @@ export const useTestStore = defineStore('test', {
       }
       const totalEvaluado = Math.max(1, this.preguntasEvaluables.length)
       const nota = Math.max(0, ((ac * this.config.puntosAcierto - pen * fa + this.config.puntosBlanco * bl) / totalEvaluado) * 10)
-      this.resultado = { aciertos: ac, fallos: fa, blancos: bl, nota: +nota.toFixed(2) }
+      this.resultado = { aciertos: ac, fallos: fa, blancos: bl, nota: +nota.toFixed(2), total: totalEvaluado }
       this.falladas = [...new Set([...this.falladas, ...falladasAhora])]
       localStorage.setItem('autoexamen-falladas', JSON.stringify(this.falladas))
-      this.historial.unshift({ ...this.resultado, total: totalEvaluado, fecha: new Date().toISOString(), examenId: this.examenActualId, examenNombre: this.examenActualNombre, falladas: falladasAhora })
+      this.historial.unshift({ ...this.resultado, fecha: new Date().toISOString(), examenId: this.examenActualId, examenNombre: this.examenActualNombre, falladas: falladasAhora })
       localStorage.setItem('autoexamen-historial', JSON.stringify(this.historial.slice(0, 50)))
       this.entregado = true
     },

@@ -12,7 +12,7 @@
     <div class="score-circle">{{ store.resultado.nota }}<small>/10</small></div>
     <div>
       <h2>Intento completado</h2>
-      <p class="muted">{{ store.resultado.aciertos }} aciertos de {{ store.banco.length }} preguntas.</p>
+      <p class="muted">{{ store.resultado.aciertos }} aciertos de {{ store.resultado.total }} preguntas evaluadas.</p>
     </div>
     <div class="result-stats">
       <span class="badge">✓ {{ store.resultado.aciertos }} aciertos</span>

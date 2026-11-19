@@ -8,7 +8,7 @@
   <div class="card" style="display:flex; align-items:center; justify-content:space-between; gap:16px;">
     <div>
       <div style="font-weight:700;">Página {{ store.page + 1 }} / {{ store.totalPages }}</div>
-      <div style="font-size:.9rem; opacity:.8;">Progreso global: {{ store.progresoPct }}%</div>
+      <div style="font-size:.9rem; opacity:.8;">{{ store.total }} preguntas evaluables · Progreso: {{ store.progresoPct }}%</div>
     </div>
 
     <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
@@ -51,7 +51,7 @@
     <span class="badge">Aciertos: {{ store.resultado.aciertos }}</span>
     <span class="badge" style="background:#ef4444;">Fallos: {{ store.resultado.fallos }}</span>
     <span class="badge" style="background:#6b7280;">Blancos: {{ store.resultado.blancos }}</span>
-    <span class="badge" style="background:#22c55e;">Nota: {{ store.resultado.nota }}</span>
+    <span class="badge" style="background:#22c55e;">Nota: {{ store.resultado.nota }}/10</span>
   </div>
 </template>
 

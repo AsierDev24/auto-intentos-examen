@@ -37,27 +37,7 @@ y por eso esa validación queda pendiente.
 9. En **Configuración** puedes cambiar la penalización y el número de preguntas por página.
 10. Pulsa el icono de luna o sol para cambiar el tema visual.
 
-## Ejecutarlo con Docker
-
-Necesitas tener Docker Desktop instalado y abierto.
-
-Desde la carpeta del proyecto ejecuta:
-
-```bash
-docker build -t auto-intentos-examen .
-docker run --rm -p 8080:80 auto-intentos-examen
-```
-
-Después abre [http://localhost:8080](http://localhost:8080) en el navegador.
-
-Para detenerlo, pulsa `Ctrl+C` si está en primer plano o ejecuta:
-
-```bash
-docker ps
-docker stop <ID_DEL_CONTENEDOR>
-```
-
-## Ejecutarlo sin Docker
+## Desarrollo local
 
 Necesitas Node.js 22 o una versión compatible:
 
@@ -66,7 +46,7 @@ npm install
 npm run dev
 ```
 
-Vite mostrará la dirección local, normalmente [http://localhost:5173](http://localhost:5173).
+Vite mostrará la dirección local, normalmente [http://localhost:5173](http://localhost:5173). Esta ejecución sirve para desarrollar y probar la interfaz web; la distribución prevista para usuarios finales es el instalador de escritorio Tauri.
 
 Para crear la versión de producción:
 
@@ -132,7 +112,6 @@ Y la plantilla de respuestas contiene entradas como:
 - Vue Router
 - PDF.js
 - Tesseract.js
-- Docker y Nginx
 
 ## Autor y licencia
 
